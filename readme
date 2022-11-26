@@ -1,3 +1,6 @@
-create a secrets.txt that includes your National Rail Enquiries Darwin Lite access key. 
+create a secrets.txt that includes three lines:
+- your National Rail Enquiries Darwin Lite access key
+- the station code for the left-hand side of the display
+- the station code for the right-hand side of the display
 
 this project uses virtualenv
