@@ -1,5 +1,6 @@
 import requests
 from typing import Dict
+import math
 
 def load_secrets() -> Dict[str,str]:
     """just uses newlines to grab info and assumes ordering
@@ -21,13 +22,48 @@ URL = "https://huxley2.azurewebsites.net"
 def query(path: str) -> str:
     return f"{URL}/{path}?accessToken={SECRETS['access_key']}"
 
-right_from_left_query = query(f"arrivals/{SECRETS['right_stn']}/from/{SECRETS['left_stn']}/2")
+def hours_decimal_from_time_str(time_str: str) -> float:
+    """turns a HH:MM time string into a decimal, where the units are the hours since midnight and the decimal is the fraction through the hour
+
+    Args:
+        time_str (str): "hh:mm"
+
+    Returns:
+        float: hours.fraction_through_hour
+    """
+    # not sure if this is 24h clock or not yet?
+    return int(time_str[0:2]) + (int(time_str[3:])/60.0)
+
+right_from_left_query = query(f"arrivals/{SECRETS['right_stn']}/from/{SECRETS['left_stn']}")
 print(right_from_left_query)
 right_from_left = requests.get(right_from_left_query)
 trains = right_from_left.json().get("trainServices")
 for train in trains:
     print(f"train {train['serviceIdUrlSafe']} from {train['origin'][0]['locationName']} to {train['destination'][0]['locationName']}")
     train_info = requests.get(query(f"service/{train['serviceIdUrlSafe']}")).json()
-    print(f'due to arrive at {train_info["sta"]}')
+    # train_info[previousCallingPoints] = [ { callingPoint: [ { locationName: "long name", crs: "code", st/at/at: ... }, ]}]
+    # find stations between left and right inc:
+    prev_locations = train_info["previousCallingPoints"][0]["callingPoint"]
+    interesting_locations = []
+    for prev_location in prev_locations:
+        if len(interesting_locations) > 0 or prev_location["crs"].lower() == SECRETS["left_stn"].lower():
+            interesting_locations.append({
+                'locationName': prev_location['locationName'],
+                'crs': prev_location['crs'],
+                'time': hours_decimal_from_time_str(prev_location['st']),
+            })
+    interesting_locations.append({
+        'locationName': train_info['locationName'],
+        'crs': train_info['crs'],
+        'time': hours_decimal_from_time_str(train_info['sta']),
+    })
+    print(str(interesting_locations))
+    rail_length = 36
+    station_spacing = math.floor((rail_length-1)/(len(interesting_locations)-1)) # we want the last station at the end of the str
+    track_str = ""
+    for stn_index in range(len(interesting_locations)-1):
+        track_str += interesting_locations[stn_index]["crs"][0] + ("-" * (station_spacing-1))
+    track_str += interesting_locations[-1]["crs"][0]
+    print(track_str)
     
 
