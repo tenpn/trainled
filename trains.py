@@ -1,6 +1,8 @@
 import requests
 from typing import Dict, List
 import math
+from datetime import datetime
+import re
 
 URL = "https://huxley2.azurewebsites.net"
 
@@ -72,17 +74,33 @@ for train in trains:
     
     print(str(interesting_locations))
     
+    # there's something wrong with this format?
+    # now = datetime.strptime("2022-12-03T20:53:08.2488111+00:00".strip(), "%Y-%m-%dT%H:%M:%S.%f%z")
+    # hey let's be dumb:
+    now = hours_decimal_from_time_str(train_info['generatedAt'][11:16])
+    print(now)
+    
     # build an ascii string for the LED string
     rail_length = 50
-    station_spacing = math.floor((rail_length-1)/(len(interesting_locations)-1)) # we want the last station at the end of the str
     track_str = ""
     for stn_index in range(len(interesting_locations)):
         current_loc = interesting_locations[stn_index]
+        start_len = len(track_str)
+        track_length = 0
         if stn_index > 0:
             # pad the tracks
-            pos_delta = DISTANCES[stn_index-1]/TOTAL_DISTANCE
-            track_str += "-" * math.floor(rail_length*pos_delta)
+            track_length = math.floor(rail_length * (DISTANCES[stn_index-1]/TOTAL_DISTANCE))
+            track_str += "-" * track_length
+            
         track_str += interesting_locations[stn_index]["crs"][0]
+        track_length += 1
+        
+        if stn_index > 0:
+            if now > interesting_locations[stn_index-1]['time'] and now <= current_loc['time']:
+                proportion = (now - interesting_locations[stn_index-1]['time'])/(current_loc['time'] - interesting_locations[stn_index-1]['time'])
+                train_char_index = start_len + math.floor(proportion * track_length)
+                print(f"found train between {interesting_locations[stn_index-1]['crs']} and {current_loc['crs']} at prop {proportion} c {train_char_index}")
+                track_str = track_str[:train_char_index] + '>' + track_str[train_char_index+1:]
     
     print(track_str)
     
