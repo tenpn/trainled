@@ -3,4 +3,6 @@ create a secrets.txt that includes three lines:
 - the station code for the left-hand side of the display
 - the station code for the right-hand side of the display
 
+use railmiles.me to manually(!) cache the distances between each station pair
+
 this project uses virtualenv

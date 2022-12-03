@@ -1,6 +1,8 @@
 import requests
-from typing import Dict
+from typing import Dict, List
 import math
+
+URL = "https://huxley2.azurewebsites.net"
 
 def load_secrets() -> Dict[str,str]:
     """just uses newlines to grab info and assumes ordering
@@ -17,8 +19,18 @@ def load_secrets() -> Dict[str,str]:
         }
 
 SECRETS = load_secrets()
-URL = "https://huxley2.azurewebsites.net"
 
+def load_distances() -> List[float]:
+    """
+    Returns:
+        List[float]: the separation between the stations in floating point miles
+    """
+    with open("cached_mileage.txt", "r") as cached_mileage:
+        return [float(line) for line in cached_mileage.readlines()]
+    
+DISTANCES = load_distances()
+TOTAL_DISTANCE = sum(DISTANCES)
+    
 def query(path: str) -> str:
     return f"{URL}/{path}?accessToken={SECRETS['access_key']}"
 
@@ -57,13 +69,21 @@ for train in trains:
         'crs': train_info['crs'],
         'time': hours_decimal_from_time_str(train_info['sta']),
     })
+    
     print(str(interesting_locations))
-    rail_length = 36
+    
+    # build an ascii string for the LED string
+    rail_length = 50
     station_spacing = math.floor((rail_length-1)/(len(interesting_locations)-1)) # we want the last station at the end of the str
     track_str = ""
-    for stn_index in range(len(interesting_locations)-1):
-        track_str += interesting_locations[stn_index]["crs"][0] + ("-" * (station_spacing-1))
-    track_str += interesting_locations[-1]["crs"][0]
+    for stn_index in range(len(interesting_locations)):
+        current_loc = interesting_locations[stn_index]
+        if stn_index > 0:
+            # pad the tracks
+            pos_delta = DISTANCES[stn_index-1]/TOTAL_DISTANCE
+            track_str += "-" * math.floor(rail_length*pos_delta)
+        track_str += interesting_locations[stn_index]["crs"][0]
+    
     print(track_str)
     
 
