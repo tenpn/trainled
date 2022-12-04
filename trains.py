@@ -114,29 +114,27 @@ def make_ascii_tracks(station_chars: List[str], station_separations: List[float]
 
 if __name__=="__main__":
 
-    right_from_left_query = query(f"arrivals/{SECRETS['right_stn']}/from/{SECRETS['left_stn']}")
-    right_from_left = requests.get(right_from_left_query)
-    trains = right_from_left.json().get("trainServices")
+    left_to_right = requests.get(query(f"arrivals/{SECRETS['right_stn']}/from/{SECRETS['left_stn']}"))
 
-    train_infos = [requests.get(query(f"service/{train['serviceIdUrlSafe']}")).json() for train in trains]
-    train_locs = [get_locations_from_train_info(train_info) for train_info in train_infos]
-    print("\n".join([str(train_loc) for train_loc in train_locs]))
+    lr_train_infos = [requests.get(query(f"service/{train['serviceIdUrlSafe']}")).json() for train in left_to_right.json().get("trainServices")]
+    lr_train_locs = [get_locations_from_train_info(train_info) for train_info in lr_train_infos]
+    print("\n".join([str(train_loc) for train_loc in lr_train_locs]))
 
     # there's something wrong with this format?
     # now = datetime.strptime("2022-12-03T20:53:08.2488111+00:00".strip(), "%Y-%m-%dT%H:%M:%S.%f%z")
     # hey let's be dumb:
-    now = hours_decimal_from_time_str(train_infos[0]['generatedAt'][11:16])
+    now = hours_decimal_from_time_str(lr_train_infos[0]['generatedAt'][11:16])
     print(now)
 
-    train_positions = [get_train_position_from_station_times([stn['time'] for stn in train_loc], now) for train_loc in train_locs]
-    train_positions = [train_pos for train_pos in train_positions if train_pos is not None]
+    lr_train_positions = [get_train_position_from_station_times([stn['time'] for stn in train_loc], now) for train_loc in lr_train_locs]
+    lr_train_positions = [train_pos for train_pos in lr_train_positions if train_pos is not None]
 
     # doesn't matter which train we use, stations are the same
-    station_chars = [stn['crs'][0] for stn in train_locs[0]]
+    station_chars = [stn['crs'][0] for stn in lr_train_locs[0]]
     distances = load_distances()
     (tracks_str, station_indicies) = make_ascii_tracks(station_chars, distances)
 
-    for (prev_stn_index, prop) in train_positions:
+    for (prev_stn_index, prop) in lr_train_positions:
         station_interval = station_indicies[prev_stn_index + 1] - station_indicies[prev_stn_index]
         train_char_index = station_indicies[prev_stn_index] + math.floor(prop * station_interval)
         tracks_str = tracks_str[:train_char_index] + '>' + tracks_str[train_char_index+1:]
