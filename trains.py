@@ -8,16 +8,15 @@ def load_secrets() -> Dict[str,str]:
     """just uses newlines to grab info and assumes ordering
 
     Returns:
-        Dict[str,str]: the secrets data, with useful keys
+        Dict[str,str]: the SECRETS data, with useful keys
     """
-    with open("secrets.txt", "r") as secrets:
-        lines = secrets.readlines()
+    with open("SECRETS.txt", "r") as SECRETS:
+        lines = SECRETS.readlines()
         return { 
             "access_key": lines[0].strip(),
             "left_stn": lines[1].strip(),
             "right_stn": lines[2].strip(),
         }
-
 SECRETS = load_secrets()
 
 def load_distances() -> List[float]:
@@ -27,9 +26,6 @@ def load_distances() -> List[float]:
     """
     with open("cached_mileage.txt", "r") as cached_mileage:
         return [float(line) for line in cached_mileage.readlines()]
-    
-DISTANCES = load_distances()
-TOTAL_DISTANCE = sum(DISTANCES)
     
 def query(path: str) -> str:
     return f"{URL}/{path}?accessToken={SECRETS['access_key']}"
@@ -45,11 +41,6 @@ def hours_decimal_from_time_str(time_str: str) -> float:
     """
     # not sure if this is 24h clock or not yet?
     return int(time_str[0:2]) + (int(time_str[3:])/60.0)
-
-right_from_left_query = query(f"arrivals/{SECRETS['right_stn']}/from/{SECRETS['left_stn']}")
-print(right_from_left_query)
-right_from_left = requests.get(right_from_left_query)
-trains = right_from_left.json().get("trainServices")
 
 def get_locations_from_train_info(train_info: Dict) -> Dict[str, Union[str, float]]:
     """generates info about when this train will be visiting each station 
@@ -76,10 +67,6 @@ def get_locations_from_train_info(train_info: Dict) -> Dict[str, Union[str, floa
     })
     return interesting_locations
 
-train_infos = [requests.get(query(f"service/{train['serviceIdUrlSafe']}")).json() for train in trains]
-train_locs = [get_locations_from_train_info(train_info) for train_info in train_infos]
-print("\n".join([str(train_loc) for train_loc in train_locs]))
-
 def get_train_position_from_station_times(train_times_at_stations: List[float], now: float) -> Tuple[int, float]:
     """finds where the train is based on the current time and when the train will be at each station
 
@@ -100,15 +87,6 @@ def get_train_position_from_station_times(train_times_at_stations: List[float], 
         
     return None
 
-# there's something wrong with this format?
-# now = datetime.strptime("2022-12-03T20:53:08.2488111+00:00".strip(), "%Y-%m-%dT%H:%M:%S.%f%z")
-# hey let's be dumb:
-now = hours_decimal_from_time_str(train_infos[0]['generatedAt'][11:16])
-print(now)
-
-train_positions = [get_train_position_from_station_times([stn['time'] for stn in train_loc], now) for train_loc in train_locs]
-train_positions = [train_pos for train_pos in train_positions if train_pos is not None]
-
 def make_ascii_tracks(station_chars: List[str], station_separations: List[float]) -> Tuple[str, List[int]]:
     """makes the ascii string of the train tracks, and a list of indeices of each station. uses distance info
 
@@ -120,12 +98,13 @@ def make_ascii_tracks(station_chars: List[str], station_separations: List[float]
         Tuple[str, List[int]]: the tracks, with a char for each station, with a list of string indicies of each station
     """
     rail_length = 50
+    total_separation = sum(station_separations)
     track_str = ""
     station_indicies = []
     for stn_index in range(len(station_chars)):
         if stn_index > 0:
             # pad the tracks
-            track_length_between_stations = math.floor(rail_length * (station_separations[stn_index-1]/TOTAL_DISTANCE))
+            track_length_between_stations = math.floor(rail_length * (station_separations[stn_index-1]/total_separation))
             track_str += "-" * track_length_between_stations
 
         track_str += station_chars[stn_index]
@@ -133,14 +112,33 @@ def make_ascii_tracks(station_chars: List[str], station_separations: List[float]
 
     return (track_str, station_indicies)
 
-station_chars = [stn['crs'][0] for stn in train_locs[0]] # doesn't matter which train we use, stations are the same 
-(tracks_str, station_indicies) = make_ascii_tracks(station_chars, DISTANCES)
+if __name__=="__main__":
 
-for (prev_stn_index, prop) in train_positions:
-    station_interval = station_indicies[prev_stn_index+1] - station_indicies[prev_stn_index]
-    train_char_index = station_indicies[prev_stn_index] + math.floor(prop * station_interval)
-    tracks_str = tracks_str[:train_char_index] + '>' + tracks_str[train_char_index+1:]
+    right_from_left_query = query(f"arrivals/{SECRETS['right_stn']}/from/{SECRETS['left_stn']}")
+    right_from_left = requests.get(right_from_left_query)
+    trains = right_from_left.json().get("trainServices")
 
-print(tracks_str)
-    
+    train_infos = [requests.get(query(f"service/{train['serviceIdUrlSafe']}")).json() for train in trains]
+    train_locs = [get_locations_from_train_info(train_info) for train_info in train_infos]
+    print("\n".join([str(train_loc) for train_loc in train_locs]))
 
+    # there's something wrong with this format?
+    # now = datetime.strptime("2022-12-03T20:53:08.2488111+00:00".strip(), "%Y-%m-%dT%H:%M:%S.%f%z")
+    # hey let's be dumb:
+    now = hours_decimal_from_time_str(train_infos[0]['generatedAt'][11:16])
+    print(now)
+
+    train_positions = [get_train_position_from_station_times([stn['time'] for stn in train_loc], now) for train_loc in train_locs]
+    train_positions = [train_pos for train_pos in train_positions if train_pos is not None]
+
+    # doesn't matter which train we use, stations are the same
+    station_chars = [stn['crs'][0] for stn in train_locs[0]]
+    distances = load_distances()
+    (tracks_str, station_indicies) = make_ascii_tracks(station_chars, distances)
+
+    for (prev_stn_index, prop) in train_positions:
+        station_interval = station_indicies[prev_stn_index + 1] - station_indicies[prev_stn_index]
+        train_char_index = station_indicies[prev_stn_index] + math.floor(prop * station_interval)
+        tracks_str = tracks_str[:train_char_index] + '>' + tracks_str[train_char_index+1:]
+
+    print(tracks_str)
