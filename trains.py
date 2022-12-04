@@ -52,6 +52,14 @@ right_from_left = requests.get(right_from_left_query)
 trains = right_from_left.json().get("trainServices")
 
 def get_locations_from_train_info(train_info: Dict) -> Dict[str, Union[str, float]]:
+    """generates info about when this train will be visiting each station 
+
+    Args:
+        train_info (Dict): from huxley/service endpoint
+
+    Returns:
+        Dict[str, Union[str, float]]: { crs: "crs code", time: decimal-hours-when-train-is-due }
+    """
     # train_info[previousCallingPoints] = [ { callingPoint: [ { locationName: "long name", crs: "code", st/at/at: ... }, ]}]
     # find stations between left and right inc:
     prev_locations = train_info["previousCallingPoints"][0]["callingPoint"]
@@ -73,6 +81,15 @@ train_locs = [get_locations_from_train_info(train_info) for train_info in train_
 print("\n".join([str(train_loc) for train_loc in train_locs]))
 
 def get_train_position_from_station_times(train_times_at_stations: List[float], now: float) -> Tuple[int, float]:
+    """finds where the train is based on the current time and when the train will be at each station
+
+    Args:
+        train_times_at_stations (List[float]): list of times we'll be at each station in order
+        now (float): current time in decimal-hours
+
+    Returns:
+        Tuple[int, float]: (the index of our next station, the proportional distance between last station and next)
+    """
     for stn_index in range(1, len(train_locs)):
         prev_stn_time = train_times_at_stations[stn_index-1]
         current_stn_time = train_times_at_stations[stn_index]
