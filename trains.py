@@ -90,7 +90,7 @@ def get_train_position_from_station_times(train_times_at_stations: List[float], 
     Returns:
         Tuple[int, float]: (the index of our next station, the proportional distance between last station and next)
     """
-    for stn_index in range(1, len(train_locs)):
+    for stn_index in range(1, len(train_times_at_stations)):
         prev_stn_time = train_times_at_stations[stn_index-1]
         current_stn_time = train_times_at_stations[stn_index]
         
@@ -133,7 +133,7 @@ def make_ascii_tracks(station_chars: List[str], station_separations: List[float]
 
     return (track_str, station_indicies)
 
-station_chars = [stn['crs'][0] for stn in train_locs[0]]
+station_chars = [stn['crs'][0] for stn in train_locs[0]] # doesn't matter which train we use, stations are the same 
 (tracks_str, station_indicies) = make_ascii_tracks(station_chars, DISTANCES)
 
 for (prev_stn_index, prop) in train_positions:
