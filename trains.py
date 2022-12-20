@@ -1,21 +1,13 @@
 import requests
 from typing import Dict, List, Tuple, Union
 import math
-import secrets
+import train_secrets
+import cached_mileage
 
 URL = "https://huxley2.azurewebsites.net"
-
-
-def load_distances() -> List[float]:
-    """
-    Returns:
-        List[float]: the separation between the stations in floating point miles
-    """
-    with open("cached_mileage.txt", "r") as cached_mileage:
-        return [float(line) for line in cached_mileage.readlines()]
     
 def query(path: str) -> requests.Response:
-    fullURL = f"{URL}/{path}?accessToken={secrets.ACCESS_KEY}"
+    fullURL = f"{URL}/{path}?accessToken={train_secrets.ACCESS_KEY}"
     return requests.get(fullURL)
 
 def hours_decimal_from_time_str(time_str: str) -> float:
@@ -102,9 +94,9 @@ def make_ascii_tracks(station_chars: List[str], station_separations: List[float]
     return (track_str, station_indicies)
 
 if __name__=="__main__":
-    distances = load_distances()
+    distances = cached_mileage.distances
 
-    left_to_right = query(f"arrivals/{secrets.RIGHT_STATION_CRS}/from/{secrets.LEFT_STATION_CRS}")
+    left_to_right = query(f"arrivals/{train_secrets.RIGHT_STATION_CRS}/from/{train_secrets.LEFT_STATION_CRS}")
     print(f"{left_to_right} {left_to_right.ok}")
     if left_to_right.ok == False:
         print("something went wrong: " + str(left_to_right))
@@ -114,12 +106,12 @@ if __name__=="__main__":
 
     lr_train_infos = [query(f"service/{train['serviceIdUrlSafe']}").json() 
                       for train in left_to_right.json().get("trainServices")]
-    lr_train_locs = [get_locations_from_train_info(train_info, secrets.LEFT_STATION_CRS) for train_info in lr_train_infos]
+    lr_train_locs = [get_locations_from_train_info(train_info, train_secrets.LEFT_STATION_CRS) for train_info in lr_train_infos]
     
-    right_to_left = query(f"arrivals/{secrets.LEFT_STATION_CRS}/from/{secrets.RIGHT_STATION_CRS}")
+    right_to_left = query(f"arrivals/{train_secrets.LEFT_STATION_CRS}/from/{train_secrets.RIGHT_STATION_CRS}")
     rl_train_infos = [query(f"service/{train['serviceIdUrlSafe']}").json()
                       for train in right_to_left.json().get("trainServices")]
-    rl_train_locs = [get_locations_from_train_info(train_info, secrets.RIGHT_STATION_CRS) for train_info in rl_train_infos]
+    rl_train_locs = [get_locations_from_train_info(train_info, train_secrets.RIGHT_STATION_CRS) for train_info in rl_train_infos]
 
     
     # there's something wrong with this format?

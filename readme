@@ -1,8 +1,11 @@
-create a secrets.txt that includes three lines:
+create a train_secrets.py that includes three lines:
 - your National Rail Enquiries Darwin Lite access key
 - the station code for the left-hand side of the display
 - the station code for the right-hand side of the display
 
-use railmiles.me to manually(!) cache the distances between each station pair
+use railmiles.me to manually(!) cache the distances between each station pair in cached_milage.py
 
 this project uses virtualenv
+
+https://lite.realtime.nationalrail.co.uk/OpenLDBWS/
+https://huxley2.azurewebsites.net/
