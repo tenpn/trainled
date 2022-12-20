@@ -27,8 +27,8 @@ def load_distances() -> List[float]:
     with open("cached_mileage.txt", "r") as cached_mileage:
         return [float(line) for line in cached_mileage.readlines()]
     
-def query(path: str) -> str:
-    return f"{URL}/{path}?accessToken={SECRETS['access_key']}"
+def query(path: str) -> requests.Response:
+    return requests.get(f"{URL}/{path}?accessToken={SECRETS['access_key']}")
 
 def hours_decimal_from_time_str(time_str: str) -> float:
     """turns a HH:MM time string into a decimal, where the units are the hours since midnight and the decimal is the fraction through the hour
@@ -116,14 +116,20 @@ def make_ascii_tracks(station_chars: List[str], station_separations: List[float]
 if __name__=="__main__":
     distances = load_distances()
 
-    left_to_right = requests.get(query(f"arrivals/{SECRETS['right_stn']}/from/{SECRETS['left_stn']}"))
+    left_to_right = query(f"arrivals/{SECRETS['right_stn']}/from/{SECRETS['left_stn']}")
+    print(f"{left_to_right} {left_to_right.ok}")
+    if left_to_right.ok == False:
+        print("something went wrong: " + str(left_to_right))
+        exit(1)
+        
+    print(left_to_right.json().get("trainServices"))
 
-    lr_train_infos = [requests.get(query(f"service/{train['serviceIdUrlSafe']}")).json() 
+    lr_train_infos = [query(f"service/{train['serviceIdUrlSafe']}").json() 
                       for train in left_to_right.json().get("trainServices")]
     lr_train_locs = [get_locations_from_train_info(train_info, SECRETS["left_stn"]) for train_info in lr_train_infos]
     
-    right_to_left = requests.get(query(f"arrivals/{SECRETS['left_stn']}/from/{SECRETS['right_stn']}"))
-    rl_train_infos = [requests.get(query(f"service/{train['serviceIdUrlSafe']}")).json()
+    right_to_left = query(f"arrivals/{SECRETS['left_stn']}/from/{SECRETS['right_stn']}")
+    rl_train_infos = [query(f"service/{train['serviceIdUrlSafe']}").json()
                       for train in right_to_left.json().get("trainServices")]
     rl_train_locs = [get_locations_from_train_info(train_info, SECRETS["right_stn"]) for train_info in rl_train_infos]
 
