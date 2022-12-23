@@ -4,11 +4,11 @@ import math
 import train_secrets
 import cached_mileage
 
-# URL = "http://localhost:7071/api/trainline"
+#URL = "http://localhost:7071/api/trainline"
 URL = "https://ldbws-line.azurewebsites.net/api/trainline"
     
 def query(left: str, right: str) -> requests.Response:
-    fullURL = f"{URL}/?left_crs={left}&right_crs={right}"
+    fullURL = f"{URL}/?left_crs={left}&right_crs={right}&code={train_secrets.AZURE_AUTH_CODE}"
     return requests.get(fullURL)
 
 def get_train_position_from_station_times(train_times_at_stations: List[float], now: float) -> Tuple[int, float]:
@@ -66,6 +66,7 @@ if __name__=="__main__":
         
     trains = trains_response.json()
         
+    # [{crs: CRS, time: float}, ...]
     lr_train_locs = trains["lr"]    
     rl_train_locs = trains["rl"]
     
@@ -93,8 +94,6 @@ if __name__=="__main__":
     rl_train_positions = [train_pos for train_pos in rl_train_positions if train_pos is not None]
     # need to flip indicies for the other direction
     rl_train_positions = [(len(station_indicies) - prev_stn_index-1, 1-prop) for (prev_stn_index,prop) in rl_train_positions]
-    print(rl_train_positions)
-
 
     for (prev_stn_index, prop) in lr_train_positions:
         station_interval = station_indicies[prev_stn_index + 1] - station_indicies[prev_stn_index]
