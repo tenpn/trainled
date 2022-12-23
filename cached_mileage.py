@@ -6,3 +6,4 @@ distances=[
     1.01,
     1.0075,
 ]
+station_count = len(distances)+1
