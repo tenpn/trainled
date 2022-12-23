@@ -56,6 +56,11 @@ def make_ascii_tracks(station_chars: List[str], station_separations: List[float]
 
     return (track_str, station_indicies)
 
+def str_from_decimal_time(dec_time: float) -> str:
+    hrs = math.floor(dec_time)
+    mins = math.floor((dec_time-hrs)*60)
+    return f"{hrs}:{mins}"
+
 if __name__=="__main__":
     distances = cached_mileage.distances
     
@@ -71,14 +76,14 @@ if __name__=="__main__":
     rl_train_locs = trains["rl"]
     
     now = trains["now"]
-    print(now)
+    print(str_from_decimal_time(now))
     
     print(">")
-    print("\n".join([str(train_loc)
+    print("\n".join([", ".join([f"{stop['crs'].lower()}@{str_from_decimal_time(stop['time'])}" for stop in train_loc]) 
           for train_loc in lr_train_locs]))
 
     print("<")
-    print("\n".join([str(train_loc)
+    print("\n".join([", ".join([f"{stop['crs'].lower()}@{str_from_decimal_time(stop['time'])}" for stop in train_loc])
           for train_loc in rl_train_locs]))
     
     # doesn't matter which train we use, stations are the same
