@@ -60,6 +60,9 @@ def update_trains():
         
     # draw trains
     (lr_train_positions, rl_train_positions, now, lr_station_names) = trains_azure.get_latest_train_positions()
+    if lr_train_positions is None:
+        show_error()
+        return
 
     for (prev_stn_index, prop) in lr_train_positions:
         station_interval = station_indicies[prev_stn_index + 1] - station_indicies[prev_stn_index]

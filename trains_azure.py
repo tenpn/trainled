@@ -55,9 +55,9 @@ def get_latest_train_positions():
         Tuple[List, List, float, List[str]]: ([(left station index, distance), ...], [(right station index, distance), ...], decimal time now, l>r station CRSs)
     """
     trains_response = query(train_secrets.LEFT_STATION_CRS, train_secrets.RIGHT_STATION_CRS)
-    print(trains_response)
+
     if trains_response.status_code != 200:
-        print("something went wrong: " + str(trains_response))
+        print(f"something went wrong: code {trains_response.status_code} {trains_response}")
         trains_response.close()
         return (None,None,0,None)
 
