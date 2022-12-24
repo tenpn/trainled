@@ -39,19 +39,11 @@ def status_handler(mode, status, ip):
             print('Wifi connection failed!')
             show_error()
             
-def update_trains():
-    # draw stations
-    print("update start")
+def draw_timetables_at(now, lr_timetable, rl_timetable):
     total_separation = sum(cached_mileage.distances)
     station_indicies = []
     next_led_index = 0
     
-    # ask this before we start drawing, so it doesn't stall things
-    timetables = trains_azure.get_timetables()
-    if timetables is None:
-        show_error()
-        return
-
     # one more station than the separation between stations
     for stn_index in range(cached_mileage.station_count):
         prev_led_index = next_led_index
@@ -68,7 +60,7 @@ def update_trains():
         
     # draw trains
     
-    (lr_train_positions, rl_train_positions) = trains_azure.get_train_positions_at(timetables.generatedAt, timetables.lr_timetable, timetables.rl_timetable)
+    (lr_train_positions, rl_train_positions) = trains_azure.get_train_positions_at(now, lr_timetable, rl_timetable)
 
     for (prev_stn_index, prop) in lr_train_positions:
         station_interval = station_indicies[prev_stn_index + 1] - station_indicies[prev_stn_index]
@@ -81,9 +73,10 @@ def update_trains():
         train_char_index = station_indicies[prev_stn_index - 1] + math.floor(prop * station_interval)
         led_strip.set_rgb(train_char_index, 50, 255, 50)
         
-    station_names = trains_azure.get_station_names_from_timetables(timetables)
-    
+    station_names = trains_azure.get_station_names_from_timetable(lr_timetable)
+
     print(trains_ascii.render_ascii_tracks(lr_train_positions, rl_train_positions, station_names))
+
 
 if __name__=="__main__":
 
@@ -94,8 +87,23 @@ if __name__=="__main__":
     try:
         network_manager = NetworkManager(train_secrets.WIFI_COUNTRY, status_handler=status_handler)
         uasyncio.get_event_loop().run_until_complete(network_manager.client(train_secrets.WIFI_SSID, train_secrets.WIFI_PSK))
+        
+        current_timetable : trains_azure.Timetables = None
+        current_timetable_tickms : int = 0
         while True:
-            update_trains()
+            print("update start")
+            
+            # ask this before we start drawing, so it doesn't stall things
+            timetables = trains_azure.get_timetables()
+            if timetables is None:
+                show_error()
+            else:
+                current_timetable = timetables
+                current_timetable_tickms = time.ticks_ms()
+                print(f"got new timetable at {current_timetable_tickms}")
+                if current_timetable is not None:
+                    draw_timetables_at(current_timetable.generatedAt, current_timetable.lr_timetable, current_timetable.rl_timetable)
+                    
             time.sleep(30)
         
     except Exception as e:

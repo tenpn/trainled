@@ -51,16 +51,16 @@ def str_from_decimal_time(dec_time) -> str:
 
 Timetables = collections.namedtuple("Timetables", ["lr_timetable", "rl_timetable", "generatedAt"])
 
-def get_station_names_from_timetables(timetables: Timetables):
+def get_station_names_from_timetable(lr_timetable):
     """assumes valid timetables
 
     Args:
-        timetables (Timetables): any timetalbes. we only need the LR timetable realy.
+        lr_timetable: 
 
     Returns:
         List[str]: station CRSs from left to right
     """
-    return [stn['crs'] for stn in timetables.lr_timetable[0]]
+    return [stn['crs'] for stn in lr_timetable[0]]
 
 def get_timetables() -> Timetables:
     """ask azure for latest timetables
