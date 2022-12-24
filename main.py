@@ -2,6 +2,7 @@ from network_manager import NetworkManager
 import train_secrets
 import trains_azure
 import cached_mileage
+import trains_ascii
 import math
 import uasyncio
 import time
@@ -74,6 +75,8 @@ def update_trains():
         station_interval = station_indicies[prev_stn_index] - station_indicies[prev_stn_index - 1]
         train_char_index = station_indicies[prev_stn_index - 1] + math.floor(prop * station_interval)
         led_strip.set_rgb(train_char_index, 50, 255, 50)
+    
+    print(trains_ascii.render_ascii_tracks(lr_train_positions, rl_train_positions, lr_station_names))
 
 if __name__=="__main__":
 

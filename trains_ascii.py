@@ -28,14 +28,11 @@ def make_ascii_tracks(station_chars, station_separations):
 
     return (track_str, station_indicies)
 
-if __name__=="__main__":
-    (lr_train_locs, rl_train_locs, now, lr_station_names) = trains_azure.get_latest_train_positions()
-    if lr_train_locs is None:
-        exit(1)
-
+def render_ascii_tracks(lr_train_locs, rl_train_locs, lr_station_names) -> str:
     # doesn't matter which train we use, stations are the same
     station_chars = [stn[0] for stn in lr_station_names]
-    (tracks_str, station_indicies) = make_ascii_tracks(station_chars, cached_mileage.distances)
+    (tracks_str, station_indicies) = make_ascii_tracks(
+        station_chars, cached_mileage.distances)
 
     for (prev_stn_index, prop) in lr_train_locs:
         station_interval = station_indicies[prev_stn_index + 1] - station_indicies[prev_stn_index]
@@ -47,5 +44,12 @@ if __name__=="__main__":
         station_interval = station_indicies[prev_stn_index] - station_indicies[prev_stn_index - 1]
         train_char_index = station_indicies[prev_stn_index - 1] + math.floor(prop * station_interval)
         tracks_str = tracks_str[:train_char_index] + '<' + tracks_str[train_char_index+1:]
+        
+    return tracks_str
 
-    print(tracks_str)
+if __name__=="__main__":
+    (lr_train_locs, rl_train_locs, now, lr_station_names) = trains_azure.get_latest_train_positions()
+    if lr_train_locs is None:
+        exit(1)
+        
+    print(render_ascii_tracks(lr_train_locs, rl_train_locs, lr_station_names))
