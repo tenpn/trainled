@@ -56,6 +56,8 @@ if __name__=="__main__":
     trains_azure.print_timetable(timetables.lr_timetable, timetables.rl_timetable, timetables.generatedAt)
     
     station_names = trains_azure.get_station_names_from_timetable(timetables.lr_timetable)
-    
-    (lr_train_locs, rl_train_locs) = trains_azure.get_train_positions_at(timetables.generatedAt, timetables.lr_timetable, timetables.rl_timetable)
-    print(render_ascii_tracks(lr_train_locs, rl_train_locs, station_names))
+        
+    for i in range(10):
+        now = timetables.generatedAt+(i*0.03)
+        (lr_train_locs, rl_train_locs) = trains_azure.get_train_positions_at(now, timetables.lr_timetable, timetables.rl_timetable)
+        print(f"{trains_azure.str_from_decimal_time(now)}: {render_ascii_tracks(lr_train_locs, rl_train_locs, station_names)}")

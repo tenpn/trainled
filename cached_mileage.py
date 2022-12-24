@@ -7,3 +7,4 @@ distances=[
     1.0075,
 ]
 station_count = len(distances)+1
+total_mileage = sum(distances)

@@ -47,7 +47,7 @@ def get_train_position_from_timetable_entry(train_times_at_stations, now):
 def str_from_decimal_time(dec_time) -> str:
     hrs = math.floor(dec_time)
     mins = math.floor((dec_time-hrs)*60)
-    return f"{hrs}:{mins}"
+    return f"{hrs:02}:{mins:02}"
 
 Timetables = collections.namedtuple("Timetables", ["lr_timetable", "rl_timetable", "generatedAt"])
 
@@ -62,12 +62,52 @@ def get_station_names_from_timetable(lr_timetable):
     """
     return [stn['crs'] for stn in lr_timetable[0]]
 
+IS_SIMULATED: bool = True
+
+def get_simulated_timetable(station_names, distances, start_time: float, finish_time:float):
+    total_distance = cached_mileage.total_mileage
+    speed = (finish_time - start_time)/total_distance
+    timetable = []
+    now = start_time
+    for i in range(len(station_names)):
+        if i > 0:
+            now = now + distances[i-1] * speed
+        timetable.append({"crs": station_names[i], "time": now})
+    return timetable    
+
+def get_simulated_timetables():
+    filler_station_count = cached_mileage.station_count-2
+    filler_station_names = [str(i+1) for i in range(filler_station_count)]
+    station_names = [train_secrets.LEFT_STATION_CRS] + filler_station_names + [train_secrets.RIGHT_STATION_CRS]
+    rl_station_names = list(reversed(station_names))
+    rl_distances = list(reversed(cached_mileage.distances))
+    
+    now = 10
+    return Timetables(
+        [
+            get_simulated_timetable(station_names, cached_mileage.distances, 9.6, 10.1),
+            get_simulated_timetable(station_names, cached_mileage.distances, 9.8, 10.3),
+            get_simulated_timetable(station_names, cached_mileage.distances, 10, 10.5), 
+            get_simulated_timetable(station_names, cached_mileage.distances, 10.1, 10.6),
+        ],
+        [
+            get_simulated_timetable(rl_station_names, rl_distances, 9.6, 10.1),
+            get_simulated_timetable(rl_station_names, rl_distances, 9.8, 10.3),
+            get_simulated_timetable(rl_station_names, rl_distances, 10, 10.5),
+            get_simulated_timetable(rl_station_names, rl_distances, 10.1, 10.6),
+        ],
+        now
+    )
+
 def get_timetables() -> Timetables:
     """ask azure for latest timetables
 
     Returns:
         Timetables: None if something went wrong
     """
+    if IS_SIMULATED:
+        return get_simulated_timetables()
+        
     trains_response = query(train_secrets.LEFT_STATION_CRS, train_secrets.RIGHT_STATION_CRS)
 
     if trains_response.status_code != 200:
