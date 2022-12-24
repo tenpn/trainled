@@ -47,8 +47,11 @@ def update_trains():
     next_led_index = 0
     
     # ask this before we start drawing, so it doesn't stall things
-    (lr_train_positions, rl_train_positions, now, lr_station_names) = trains_azure.get_latest_train_positions()
-    
+    timetables = trains_azure.get_timetables()
+    if timetables is None:
+        show_error()
+        return
+
     # one more station than the separation between stations
     for stn_index in range(cached_mileage.station_count):
         prev_led_index = next_led_index
@@ -64,9 +67,8 @@ def update_trains():
         station_indicies.append(next_led_index)
         
     # draw trains
-    if lr_train_positions is None:
-        show_error()
-        return
+    
+    (lr_train_positions, rl_train_positions) = trains_azure.get_train_positions_at(timetables.generatedAt, timetables.lr_timetable, timetables.rl_timetable)
 
     for (prev_stn_index, prop) in lr_train_positions:
         station_interval = station_indicies[prev_stn_index + 1] - station_indicies[prev_stn_index]
@@ -78,8 +80,10 @@ def update_trains():
         station_interval = station_indicies[prev_stn_index] - station_indicies[prev_stn_index - 1]
         train_char_index = station_indicies[prev_stn_index - 1] + math.floor(prop * station_interval)
         led_strip.set_rgb(train_char_index, 50, 255, 50)
+        
+    station_names = trains_azure.get_station_names_from_timetables(timetables)
     
-    print(trains_ascii.render_ascii_tracks(lr_train_positions, rl_train_positions, lr_station_names))
+    print(trains_ascii.render_ascii_tracks(lr_train_positions, rl_train_positions, station_names))
 
 if __name__=="__main__":
 

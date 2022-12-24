@@ -48,8 +48,14 @@ def render_ascii_tracks(lr_train_locs, rl_train_locs, lr_station_names) -> str:
     return tracks_str
 
 if __name__=="__main__":
-    (lr_train_locs, rl_train_locs, now, lr_station_names) = trains_azure.get_latest_train_positions()
-    if lr_train_locs is None:
+    timetables = trains_azure.get_timetables()
+
+    if timetables is None:
         exit(1)
         
-    print(render_ascii_tracks(lr_train_locs, rl_train_locs, lr_station_names))
+    trains_azure.print_timetable(timetables.lr_timetable, timetables.rl_timetable, timetables.generatedAt)
+    
+    station_names = trains_azure.get_station_names_from_timetables(timetables)
+    
+    (lr_train_locs, rl_train_locs) = trains_azure.get_train_positions_at(timetables.generatedAt, timetables.lr_timetable, timetables.rl_timetable)
+    print(render_ascii_tracks(lr_train_locs, rl_train_locs, station_names))
