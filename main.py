@@ -41,10 +41,14 @@ def status_handler(mode, status, ip):
             
 def update_trains():
     # draw stations
-    
+    print("update start")
     total_separation = sum(cached_mileage.distances)
     station_indicies = []
     next_led_index = 0
+    
+    # ask this before we start drawing, so it doesn't stall things
+    (lr_train_positions, rl_train_positions, now, lr_station_names) = trains_azure.get_latest_train_positions()
+    
     # one more station than the separation between stations
     for stn_index in range(cached_mileage.station_count):
         prev_led_index = next_led_index
@@ -60,7 +64,6 @@ def update_trains():
         station_indicies.append(next_led_index)
         
     # draw trains
-    (lr_train_positions, rl_train_positions, now, lr_station_names) = trains_azure.get_latest_train_positions()
     if lr_train_positions is None:
         show_error()
         return
